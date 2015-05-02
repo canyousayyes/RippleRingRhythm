@@ -6,23 +6,33 @@
 
     // BaseRing Module
     RippleRingRhythm.BaseRing = function (svg, args) {
-        var defaultArgs = {
+        var self = this, defaultArgs = {
             x: 0,
             y: 0,
             initRadius: 1,
-            radius: 20,
+            duration: 1000,
+            speed: 0.1,
+            strength: 1,
+            health: 1,
             strokeColor: '#000',
-            strokeWidth: '2',
+            strokeWidth: '4',
             fillColor: 'transparent'
         };
         args = this.extend(defaultArgs, args);
 
+        // Create element in target svg and set properties based on args
         this.element = svg.circle(args.initRadius);
         this.element.stroke({color: args.strokeColor, width: args.strokeWidth})
                 .fill({color: args.fillColor})
+                .opacity(1)
                 .move(args.x, args.y);
-        this.element.animate()
-                .radius(args.radius);
+        // Setup animation. Trigger 'ringdone' event on target svg to allow it to handle this instance
+        this.element.animate({duration: args.duration})
+                .radius(args.duration * args.speed)
+                .opacity(0)
+                .after(function () {
+                    svg.fire('ringdone', {source: self.element});
+                });
     };
 
     RippleRingRhythm.BaseRing.prototype.extend = function (args, newArgs) {
@@ -39,7 +49,6 @@
         var args = {
             x: x,
             y: y,
-            radius: 20,
             strokeColor: '#08C'
         };
         RippleRingRhythm.BaseRing.call(this, svg, args);
@@ -55,8 +64,8 @@
     };
 
     RippleRingRhythm.Game.prototype.addWhiteRing = function (x, y) {
-        var ring = new RippleRingRhythm.WhiteRing(this.svg, x, y);
-        this.rings.add(ring);
+        var ringObj = new RippleRingRhythm.WhiteRing(this.svg, x, y);
+        this.rings.add(ringObj.element);
     };    
 
     RippleRingRhythm.Game.prototype.init = function () {
@@ -68,6 +77,14 @@
         // Setup events
         this.svg.click(function (e) {
             self.addWhiteRing(e.x, e.y);
+        });
+        this.svg.on('ringdone', function (e) {
+            var element;
+            if (e.detail && e.detail.source) {
+                element = e.detail.source;
+                self.rings.remove(element);
+                element.remove();
+            }
         });
     };
 
