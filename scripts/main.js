@@ -4,6 +4,17 @@
     "use strict";
     var RippleRingRhythm = {};
 
+    // Common functions
+    RippleRingRhythm.extend = function (args, newArgs) {
+        Object.keys(newArgs).forEach(function (key) {
+            if (newArgs.hasOwnProperty(key)) {
+                args[key] = newArgs[key];
+            }
+        });
+        return args;
+    };
+
+
     // BaseRing Module
     RippleRingRhythm.BaseRing = function (svg, args) {
         var self = this, defaultArgs = {
@@ -18,7 +29,7 @@
             strokeWidth: '4',
             fillColor: 'transparent'
         };
-        args = this.extend(defaultArgs, args);
+        args = RippleRingRhythm.extend(defaultArgs, args);
 
         // Create element in target svg and set properties based on args
         this.element = svg.circle(args.initRadius);
@@ -33,15 +44,6 @@
                 .after(function () {
                     svg.fire('ringdone', {source: self.element});
                 });
-    };
-
-    RippleRingRhythm.BaseRing.prototype.extend = function (args, newArgs) {
-        Object.keys(newArgs).forEach(function (key) {
-            if (newArgs.hasOwnProperty(key)) {
-                args[key] = newArgs[key];
-            }
-        });
-        return args;
     };
 
     // WhiteRing Module extends BaseRing
