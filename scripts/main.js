@@ -14,6 +14,17 @@
         return args;
     };
 
+    // Setting Class
+    RippleRingRhythm.Setting = function () {
+        this.score = 0;
+        this.ringDuration = 1000;
+        this.ringSpeed = 0.1;
+        this.pointDuration = 5000;
+        this.pointSpeed = 0.1;
+        this.pointMax = 500;
+        this.pointFrequency = 4;
+    };
+
     // BaseCircle Class
     RippleRingRhythm.BaseCircle = function (game, extendArgs) {
         var defaultExtendArgs = {
@@ -44,8 +55,8 @@
     // BaseRing extends BaseCircle
     RippleRingRhythm.BaseRing = function (game, extendArgs) {
         var self = this, defaultExtendArgs = {
-            radiusSpeed: 0.1,
-            duration: 1000,
+            radiusSpeed: game.setting.ringSpeed,
+            duration: game.setting.ringDuration,
             fillColor: 'transparent'
         };
         extendArgs = RippleRingRhythm.extend(defaultExtendArgs, extendArgs);
@@ -82,7 +93,7 @@
             dx: 0,
             dy: 0,
             radius: 6,
-            duration: 5000,
+            duration: game.setting.pointDuration,
             strokeColor: 'transparent'
         };
         extendArgs = RippleRingRhythm.extend(defaultExtendArgs, extendArgs);
@@ -129,6 +140,7 @@
         this.rings = null;
         this.regularAddPointHandle = null;
         this.regularUpdateHandle = null;
+        this.setting = null;
     };
 
     RippleRingRhythm.Game.prototype.addRing = function (x, y, type) {
@@ -150,6 +162,9 @@
 
     RippleRingRhythm.Game.prototype.addPoint = function (x, y, dx, dy, type) {
         var pointObj;
+        if (this.points.members.length >= this.setting.pointMax) {
+            return;
+        }
         switch (type) {
         case 'white':
             pointObj = new RippleRingRhythm.WhitePoint(this, x, y, dx, dy);
@@ -163,7 +178,7 @@
     RippleRingRhythm.Game.prototype.addRandomPoint = function () {
         var rbox, direction, speed, angle, x, y, dx, dy;
         rbox = this.svg.rbox();
-        speed = 0.1;
+        speed = this.setting.pointSpeed;
         angle = Math.random() * 120 - 60;
         // Random determine a direction
         direction = Math.floor(Math.random() * 4);
@@ -223,7 +238,7 @@
                 dist2 = Math.pow(rx - px, 2) + Math.pow(ry - py, 2);
                 diff2 = Math.pow(rr + pr, 2);
                 ratio = (diff2 < 0.1) ? 0 : (dist2 / diff2);
-                if ((ratio > 0.9) && (ratio < 1.1)) {
+                if ((ratio > 0.85) && (ratio < 1.15)) {
                     point.fire('burst');
                 }
             });
@@ -236,14 +251,18 @@
         this.svg = new SVG('game').size('100%', '100%');
         this.points = this.svg.set();
         this.rings = this.svg.set();
+        this.setting = new RippleRingRhythm.Setting();
         // Setup events
         this.svg.click(function (e) {
             self.addRing(e.x, e.y, 'white');
         });
         // Setup regular functions
         this.regularAddPointHandle = setInterval(function () {
-            self.addRandomPoint();
-        }, 500);
+            var i;
+            for (i = 0; i < self.setting.pointFrequency; i += 1) {
+                self.addRandomPoint();
+            }
+        }, 1000);
         this.regularUpdateHandle = setInterval(function () {
             self.update.call(self);
         }, 30);
