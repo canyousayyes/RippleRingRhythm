@@ -23,6 +23,7 @@
         this.pointSpeed = 0.1;
         this.pointMax = 500;
         this.pointFrequency = 4;
+        this.baseScore = 100;
         this.chainCountMax = 10;
         this.chainTimeout = 1000;
         this.chainMultiplier = 1.1;
@@ -127,8 +128,6 @@
         // Setup event
         this.element.on('burst', function () {
             game.addRing(self.element.x(), self.element.y(), 'white');
-            game.removePoint(self.element);
-            game.addChainedScore(100);
         });
     };
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
@@ -236,6 +235,32 @@
         // Update score
         score = Math.floor(baseScore * Math.pow(this.setting.chainMultiplier, this.chainCount));
         this.addScore(score);
+        return score;
+    };
+
+    RippleRingRhythm.Game.prototype.showPointScore = function (x, y, score) {
+        var svgText, svgTextAnimation;
+        svgText = this.svg.text(score.toString())
+                .fill({color: '#08C'})
+                .font({
+                    family: 'sans-serif',
+                    size: 12
+                })
+                .center(x, y)
+                .opacity(1);
+        svgTextAnimation = svgText.animate({duration: 1000, ease: '-'})
+                .opacity(0);
+        svgTextAnimation.after(function () {
+            svgText.remove();
+        });
+    };
+
+    RippleRingRhythm.Game.prototype.burstPoint = function (point) {
+        var score;
+        point.fire('burst');
+        score = this.addChainedScore(this.setting.baseScore);
+        this.showPointScore(point.x(), point.y(), score);
+        this.removePoint(point);
     };
 
     RippleRingRhythm.Game.prototype.update = function () {
@@ -265,7 +290,7 @@
                     ratio = dist2 / diff2;
                 }
                 if ((ratio > 0.85) && (ratio < 1.15)) {
-                    point.fire('burst');
+                    self.burstPoint(point);
                 }
             });
         });
