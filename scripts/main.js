@@ -81,7 +81,7 @@
             dx: 0,
             dy: 0,
             radius: 6,
-            duration: 500000,
+            duration: 5000,
             strokeColor: 'transparent'
         };
         extendArgs = RippleRingRhythm.extend(defaultExtendArgs, extendArgs);
@@ -96,19 +96,13 @@
         this.animation.after(function () {
             game.removePoint(self.element);
         });
-
-        // Setup event
-        this.element.on('burst', function () {
-            console.log('burst');
-            game.removePoint(self.element);
-        });
     };
     RippleRingRhythm.BasePoint.prototype = Object.create(RippleRingRhythm.BaseCircle.prototype);
     RippleRingRhythm.BasePoint.prototype.constructor = RippleRingRhythm.BasePoint;
 
     // WhitePoint extends BasePoint
     RippleRingRhythm.WhitePoint = function (game, x, y, dx, dy) {
-        var extendArgs = {
+        var self = this, extendArgs = {
             x: x,
             y: y,
             dx: dx,
@@ -116,6 +110,13 @@
             fillColor: '#08C'
         };
         RippleRingRhythm.BasePoint.call(this, game, extendArgs);
+
+        // Setup event
+        this.element.on('burst', function () {
+            console.log('burst');
+            game.addWhiteRing(self.element.x(), self.element.y());
+            game.removePoint(self.element);
+        });
     };
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
     RippleRingRhythm.WhitePoint.prototype.constructor = RippleRingRhythm.BasePoint;
@@ -152,9 +153,23 @@
     RippleRingRhythm.Game.prototype.update = function () {
         var self = this;
         self.rings.each(function (i) {
-            var ring = self.rings.get(i), rx = ring.cx(), ry = ring.cy(), rr = ring.width() / 2;
+            var ring = self.rings.get(i), rx, ry, rr;
+            if (!ring) {
+                return;
+            }
+
+            rx = ring.cx();
+            ry = ring.cy();
+            rr = ring.width() / 2;
             self.points.each(function (j) {
-                var point = self.points.get(j), px = point.cx(), py = point.cy(), pr = point.width() / 2, dist2, diff2;
+                var point = self.points.get(j), px, py, pr, dist2, diff2;
+                if (!point) {
+                    return;
+                }
+
+                px = point.cx();
+                py = point.cy();
+                pr = point.width() / 2;
                 dist2 = Math.pow(rx - px, 2) + Math.pow(ry - py, 2);
                 diff2 = Math.pow(rr + pr, 2);
                 // console.log(Math.abs(dist2 - diff2), rx, ry, rr, px, py, pr);
@@ -177,11 +192,9 @@
         this.svg.click(function (e) {
             self.addWhiteRing(e.x, e.y);
         });
-        //debug
-        self.addPoint(200, 200, 0, 0);
         // Setup regular functions
         this.regularAddPointHandle = setInterval(function () {
-            // self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2);
+            self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2);
         }, 1000);
         this.regularUpdateHandle = setInterval(function () {
             self.update.call(self);
