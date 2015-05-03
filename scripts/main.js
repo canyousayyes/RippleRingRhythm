@@ -45,6 +45,7 @@
     RippleRingRhythm.BaseRing = function (game, extendArgs) {
         var self = this, defaultExtendArgs = {
             radiusSpeed: 0.1,
+            duration: 1000,
             fillColor: 'transparent'
         };
         extendArgs = RippleRingRhythm.extend(defaultExtendArgs, extendArgs);
@@ -212,7 +213,7 @@
             ry = ring.cy();
             rr = ring.width() / 2;
             self.points.each(function (j) {
-                var point = self.points.get(j), px, py, pr, dist2, diff2;
+                var point = self.points.get(j), px, py, pr, dist2, diff2, ratio;
                 if (!point) {
                     return;
                 }
@@ -221,7 +222,8 @@
                 pr = point.width() / 2;
                 dist2 = Math.pow(rx - px, 2) + Math.pow(ry - py, 2);
                 diff2 = Math.pow(rr + pr, 2);
-                if (Math.abs(dist2 - diff2) < 400) {
+                ratio = (diff2 < 0.1) ? 0 : (dist2 / diff2);
+                if ((ratio > 0.9) && (ratio < 1.1)) {
                     point.fire('burst');
                 }
             });
