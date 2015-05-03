@@ -1,7 +1,7 @@
 /*jslint browser, devel, this, for */
 /*global window, SVG */
 (function () {
-    "use strict";
+    'use strict';
     var RippleRingRhythm = {};
 
     // Common functions
@@ -133,10 +133,50 @@
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
     RippleRingRhythm.WhitePoint.prototype.constructor = RippleRingRhythm.BasePoint;
 
+    // GameMenu Module
+    RippleRingRhythm.GameMenu = function (game) {
+        var self = this;
+        this.game = game;
+        // Setup menu svg group and make it the top layer (but hidden)
+        this.group = this.game.svg.group();
+        this.group.front().hide();
+
+        // Setup elements in the group
+        this.overlay = this.group.rect('100%', '100%');
+        this.overlay.move(0, 0)
+                .fill({color: '#000'})
+                .opacity(0);
+
+        // Setup event
+        this.overlay.click(function (e) {
+            e.stopPropagation();
+            self.hideMenu();
+        });
+        window.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            self.showMenu(e.x, e.y);
+        }, false);
+    };
+
+    RippleRingRhythm.GameMenu.prototype.showMenu = function (x, y) {
+        this.group.show();
+        this.overlay.animate().opacity(0.5);
+    };
+
+    RippleRingRhythm.GameMenu.prototype.hideMenu = function () {
+        var self = this;
+        this.overlay.animate().opacity(0).after(function () {
+            self.group.hide();
+        });
+    };
+
     // Game Module
     RippleRingRhythm.Game = function () {
         this.svg = null;
+        this.svgBackground = null;
         this.svgScore = null;
+        this.svgMenu = null;
+        this.svgMain = null;
         this.points = null;
         this.rings = null;
         this.chainCount = null;
@@ -159,13 +199,12 @@
     };
 
     RippleRingRhythm.Game.prototype.removeRing = function (ring) {
-        this.rings.remove(ring);
         ring.remove();
     };
 
     RippleRingRhythm.Game.prototype.addPoint = function (x, y, dx, dy, type) {
         var pointObj;
-        if (this.points.members.length >= this.setting.pointMax) {
+        if (this.points.children().length >= this.setting.pointMax) {
             return;
         }
         switch (type) {
@@ -216,7 +255,6 @@
     };
 
     RippleRingRhythm.Game.prototype.removePoint = function (point) {
-        this.points.remove(point);
         point.remove();
     };
 
@@ -242,10 +280,7 @@
         var svgText, svgTextAnimation;
         svgText = this.svg.text(score.toString())
                 .fill({color: '#08C'})
-                .font({
-                    family: 'sans-serif',
-                    size: 12
-                })
+                .font({family: 'sans-serif', size: 12})
                 .center(x, y)
                 .opacity(1);
         svgTextAnimation = svgText.animate({duration: 1000, ease: '-'})
@@ -295,19 +330,17 @@
             });
         });
         // Update score
-        this.svgScore.text("Score: " + this.setting.score);
+        this.svgScore.text('Score: ' + this.setting.score);
     };
 
     RippleRingRhythm.Game.prototype.init = function () {
         var self = this;
         // Setup properties
         this.svg = new SVG('game').size('100%', '100%');
-        this.svgScore = this.svg.text("").move(10, 5).font({
-            family: 'sans-serif',
-            size: 14
-        });
-        this.points = this.svg.set();
-        this.rings = this.svg.set();
+        this.svgBackground = this.svg.rect('100%', '100%').move(0, 0).fill({color: '#191919'});
+        this.svgScore = this.svg.text('').move(10, 5).font({family: 'sans-serif', size: 14}).fill({color: '#EFEFEF'});
+        this.points = this.svg.group();
+        this.rings = this.svg.group();
         this.chainCount = 0;
         this.lastChainTimestamp = new Date();
         this.setting = new RippleRingRhythm.Setting();
@@ -315,6 +348,7 @@
         this.svg.click(function (e) {
             self.addRing(e.x, e.y, 'white');
         });
+        this.svgMenu = new RippleRingRhythm.GameMenu(this);
         // Setup regular functions
         this.regularAddPointHandle = setInterval(function () {
             var i;
