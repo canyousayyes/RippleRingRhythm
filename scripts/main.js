@@ -15,7 +15,7 @@
     };
 
     // BaseRing Module
-    RippleRingRhythm.BaseRing = function (svg, args) {
+    RippleRingRhythm.BaseRing = function (game, args) {
         var self = this, defaultArgs = {
             x: 0,
             y: 0,
@@ -30,34 +30,35 @@
         args = RippleRingRhythm.extend(defaultArgs, args);
 
         // Create element in target svg and set properties based on args
-        this.element = svg.circle(args.initRadius);
+        this.element = game.svg.circle(args.initRadius);
         this.element.stroke({color: args.strokeColor, width: args.strokeWidth})
                 .fill({color: args.fillColor})
                 .opacity(1)
                 .move(args.x, args.y);
-        // Setup animation. Trigger 'ringdone' event on target svg to allow it to handle this instance
-        this.element.animate({duration: args.duration, ease: '-'})
-                .radius(args.duration * args.speed)
-                .opacity(0)
-                .after(function () {
-                    svg.fire('ringdone', {source: self.element});
-                });
+        // Setup animation
+        this.animation = this.element.animate({duration: args.duration, ease: '-'});
+        this.animation.radius(args.duration * args.speed)
+                .opacity(0);
+        // Remove self instance when animation is done
+        this.animation.after(function () {
+            game.removeRing(self.element);
+        });
     };
 
     // WhiteRing extends BaseRing
-    RippleRingRhythm.WhiteRing = function (svg, x, y) {
+    RippleRingRhythm.WhiteRing = function (game, x, y) {
         var args = {
             x: x,
             y: y,
             strokeColor: '#08C'
         };
-        RippleRingRhythm.BaseRing.call(this, svg, args);
+        RippleRingRhythm.BaseRing.call(this, game, args);
     };
     RippleRingRhythm.WhiteRing.prototype = Object.create(RippleRingRhythm.BaseRing.prototype);
     RippleRingRhythm.WhiteRing.prototype.constructor = RippleRingRhythm.WhiteRing;
 
     // BasePoint Module
-    RippleRingRhythm.BasePoint = function (svg, args) {
+    RippleRingRhythm.BasePoint = function (game, args) {
         var self = this, defaultArgs = {
             x: 0,
             y: 0,
@@ -72,26 +73,27 @@
         args = RippleRingRhythm.extend(defaultArgs, args);
 
         // Create element in target svg and set properties based on args
-        this.element = svg.circle(args.radius);
+        this.element = game.svg.circle(args.radius);
         this.element.fill({color: args.fillColor})
                 .opacity(1)
                 .move(args.x, args.y);
-        // Setup animation. Trigger 'pointdone' event on target svg to allow it to handle this instance
-        this.element.animate({duration: args.duration, ease: '-'})
-                .move(args.x + args.duration * args.dx, args.y + args.duration * args.dy)
-                .opacity(0)
-                .after(function () {
-                    svg.fire('pointdone', {source: self.element});
-                });
+        // Setup animation
+        this.animation = this.element.animate({duration: args.duration, ease: '-'});
+        this.animation.move(args.x + args.duration * args.dx, args.y + args.duration * args.dy)
+                .opacity(0);
+        // Remove self instance when animation is done
+        this.animation.after(function () {
+            game.removePoint(self.element);
+        });
         // Setup event
         this.element.on('burst', function () {
             console.log('burst');
-            svg.fire('pointdone', {source: self.element});
+            game.removePoint(self.element);
         });
     };
 
     // WhitePoint extends BasePoint
-    RippleRingRhythm.WhitePoint = function (svg, x, y, dx, dy) {
+    RippleRingRhythm.WhitePoint = function (game, x, y, dx, dy) {
         var args = {
             x: x,
             y: y,
@@ -99,7 +101,7 @@
             dy: dy,
             fillColor: '#08C'
         };
-        RippleRingRhythm.BasePoint.call(this, svg, args);
+        RippleRingRhythm.BasePoint.call(this, game, args);
     };
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
     RippleRingRhythm.WhitePoint.prototype.constructor = RippleRingRhythm.BasePoint;
@@ -114,12 +116,12 @@
     };
 
     RippleRingRhythm.Game.prototype.addWhiteRing = function (x, y) {
-        var ringObj = new RippleRingRhythm.WhiteRing(this.svg, x, y);
+        var ringObj = new RippleRingRhythm.WhiteRing(this, x, y);
         this.rings.add(ringObj.element);
     };
 
     RippleRingRhythm.Game.prototype.addPoint = function (x, y, dx, dy) {
-        var pointObj = new RippleRingRhythm.WhitePoint(this.svg, x, y, dx, dy);
+        var pointObj = new RippleRingRhythm.WhitePoint(this, x, y, dx, dy);
         this.points.add(pointObj.element);
     };
 
@@ -160,20 +162,6 @@
         // Setup events
         this.svg.click(function (e) {
             self.addWhiteRing(e.x, e.y);
-        });
-        this.svg.on('ringdone', function (e) {
-            var ring;
-            if (e.detail && e.detail.source) {
-                ring = e.detail.source;
-                self.removeRing(ring);
-            }
-        });
-        this.svg.on('pointdone', function (e) {
-            var point;
-            if (e.detail && e.detail.source) {
-                point = e.detail.source;
-                self.removePoint(point);
-            }
         });
         //debug
         self.addPoint(200, 200, 0, 0);
