@@ -114,7 +114,7 @@
         // Setup event
         this.element.on('burst', function () {
             console.log('burst');
-            game.addWhiteRing(self.element.x(), self.element.y());
+            game.addRing(self.element.x(), self.element.y(), 'white');
             game.removePoint(self.element);
         });
     };
@@ -130,19 +130,33 @@
         this.regularUpdateHandle = null;
     };
 
-    RippleRingRhythm.Game.prototype.addWhiteRing = function (x, y) {
-        var ringObj = new RippleRingRhythm.WhiteRing(this, x, y);
-        this.rings.add(ringObj.element);
-    };
-
-    RippleRingRhythm.Game.prototype.addPoint = function (x, y, dx, dy) {
-        var pointObj = new RippleRingRhythm.WhitePoint(this, x, y, dx, dy);
-        this.points.add(pointObj.element);
+    RippleRingRhythm.Game.prototype.addRing = function (x, y, type) {
+        var ringObj;
+        switch (type) {
+        case 'white':
+            ringObj = new RippleRingRhythm.WhiteRing(this, x, y);
+            break;
+        }
+        if (ringObj) {
+            this.rings.add(ringObj.element);
+        }
     };
 
     RippleRingRhythm.Game.prototype.removeRing = function (ring) {
         this.rings.remove(ring);
         ring.remove();
+    };
+
+    RippleRingRhythm.Game.prototype.addPoint = function (x, y, dx, dy, type) {
+        var pointObj;
+        switch (type) {
+        case 'white':
+            pointObj = new RippleRingRhythm.WhitePoint(this, x, y, dx, dy)
+            break;
+        }
+        if (pointObj) {
+            this.points.add(pointObj.element);
+        }
     };
 
     RippleRingRhythm.Game.prototype.removePoint = function (point) {
@@ -157,7 +171,6 @@
             if (!ring) {
                 return;
             }
-
             rx = ring.cx();
             ry = ring.cy();
             rr = ring.width() / 2;
@@ -166,16 +179,12 @@
                 if (!point) {
                     return;
                 }
-
                 px = point.cx();
                 py = point.cy();
                 pr = point.width() / 2;
                 dist2 = Math.pow(rx - px, 2) + Math.pow(ry - py, 2);
                 diff2 = Math.pow(rr + pr, 2);
-                // console.log(Math.abs(dist2 - diff2), rx, ry, rr, px, py, pr);
                 if (Math.abs(dist2 - diff2) < 400) {
-                    // console.log('hit');
-                    // self.removePoint(point);
                     point.fire('burst');
                 }
             });
@@ -190,11 +199,11 @@
         this.rings = this.svg.set();
         // Setup events
         this.svg.click(function (e) {
-            self.addWhiteRing(e.x, e.y);
+            self.addRing(e.x, e.y, 'white');
         });
         // Setup regular functions
         this.regularAddPointHandle = setInterval(function () {
-            self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2);
+            self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2, 'white');
         }, 1000);
         this.regularUpdateHandle = setInterval(function () {
             self.update.call(self);
