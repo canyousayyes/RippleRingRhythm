@@ -23,6 +23,9 @@
         this.pointSpeed = 0.1;
         this.pointMax = 500;
         this.pointFrequency = 4;
+        this.chainCountMax = 10;
+        this.chainTimeout = 1000;
+        this.chainMultiplier = 1.1;
     };
 
     // BaseCircle Class
@@ -125,6 +128,7 @@
         this.element.on('burst', function () {
             game.addRing(self.element.x(), self.element.y(), 'white');
             game.removePoint(self.element);
+            game.addChainedScore(100);
         });
     };
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
@@ -133,11 +137,14 @@
     // Game Module
     RippleRingRhythm.Game = function () {
         this.svg = null;
+        this.svgScore = null;
         this.points = null;
         this.rings = null;
+        this.chainCount = null;
+        this.lastChainTimestamp = null;
+        this.setting = null;
         this.regularAddPointHandle = null;
         this.regularUpdateHandle = null;
-        this.setting = null;
     };
 
     RippleRingRhythm.Game.prototype.addRing = function (x, y, type) {
@@ -214,8 +221,26 @@
         point.remove();
     };
 
+    RippleRingRhythm.Game.prototype.addScore = function (score) {
+        this.setting.score += score;
+    };
+
+    RippleRingRhythm.Game.prototype.addChainedScore = function (baseScore) {
+        var score, newChainTimestamp = new Date();
+        // Update chain count
+        if (newChainTimestamp - this.lastChainTimestamp > this.setting.chainTimeout) {
+            this.chainCount = 0;
+        }
+        this.chainCount = Math.min(this.chainCount + 1, this.setting.chainCountMax);
+        this.lastChainTimestamp = newChainTimestamp;
+        // Update score
+        score = Math.floor(baseScore * Math.pow(this.setting.chainMultiplier, this.chainCount));
+        this.addScore(score);
+    };
+
     RippleRingRhythm.Game.prototype.update = function () {
         var self = this;
+        // Update collision
         self.rings.each(function (i) {
             var ring = self.rings.get(i), rx, ry, rr;
             if (!ring) {
@@ -244,14 +269,22 @@
                 }
             });
         });
+        // Update score
+        this.svgScore.text("Score: " + this.setting.score);
     };
 
     RippleRingRhythm.Game.prototype.init = function () {
         var self = this;
         // Setup properties
         this.svg = new SVG('game').size('100%', '100%');
+        this.svgScore = this.svg.text("").move(10, 5).font({
+            family: 'sans-serif',
+            size: 14
+        });
         this.points = this.svg.set();
         this.rings = this.svg.set();
+        this.chainCount = 0;
+        this.lastChainTimestamp = new Date();
         this.setting = new RippleRingRhythm.Setting();
         // Setup events
         this.svg.click(function (e) {
