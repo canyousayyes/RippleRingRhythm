@@ -62,7 +62,8 @@
             x: 0,
             y: 0,
             radius: 6,
-            duration: 5000,
+            duration: 500000,
+            // duration: 5000,
             dx: 0,
             dy: 0,
             health: 1,
@@ -81,7 +82,12 @@
                 .opacity(0)
                 .after(function () {
                     svg.fire('pointdone', {source: self.element});
-                });;
+                });
+        // Setup event
+        this.element.on('burst', function () {
+            console.log('burst');
+            svg.fire('pointdone', {source: self.element});
+        });
     };
 
     // WhitePoint extends BasePoint
@@ -103,6 +109,8 @@
         this.svg = null;
         this.points = null;
         this.rings = null;
+        this.regularAddPointHandle = null;
+        this.regularUpdateHandle = null;
     };
 
     RippleRingRhythm.Game.prototype.addWhiteRing = function (x, y) {
@@ -115,6 +123,34 @@
         this.points.add(pointObj.element);
     };
 
+    RippleRingRhythm.Game.prototype.removeRing = function (ring) {
+        this.rings.remove(ring);
+        ring.remove();
+    };
+
+    RippleRingRhythm.Game.prototype.removePoint = function (point) {
+        this.points.remove(point);
+        point.remove();
+    };
+
+    RippleRingRhythm.Game.prototype.update = function () {
+        var self = this;
+        self.rings.each(function (i) {
+            var ring = self.rings.get(i), rx = ring.cx(), ry = ring.cy(), rr = ring.width() / 2;
+            self.points.each(function (j) {
+                var point = self.points.get(j), px = point.cx(), py = point.cy(), pr = point.width() / 2, dist2, diff2;
+                dist2 = Math.pow(rx - px, 2) + Math.pow(ry - py, 2);
+                diff2 = Math.pow(rr + pr, 2);
+                // console.log(Math.abs(dist2 - diff2), rx, ry, rr, px, py, pr);
+                if (Math.abs(dist2 - diff2) < 400) {
+                    // console.log('hit');
+                    // self.removePoint(point);
+                    point.fire('burst');
+                }
+            });
+        });
+    };
+
     RippleRingRhythm.Game.prototype.init = function () {
         var self = this;
         // Setup properties
@@ -122,28 +158,32 @@
         this.points = this.svg.set();
         this.rings = this.svg.set();
         // Setup events
-        setInterval(function () {
-            self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2);
-        }, 1000);
         this.svg.click(function (e) {
             self.addWhiteRing(e.x, e.y);
         });
         this.svg.on('ringdone', function (e) {
-            var element;
+            var ring;
             if (e.detail && e.detail.source) {
-                element = e.detail.source;
-                self.rings.remove(element);
-                element.remove();
+                ring = e.detail.source;
+                self.removeRing(ring);
             }
         });
         this.svg.on('pointdone', function (e) {
-            var element;
+            var point;
             if (e.detail && e.detail.source) {
-                element = e.detail.source;
-                self.points.remove(element);
-                element.remove();
+                point = e.detail.source;
+                self.removePoint(point);
             }
         });
+        //debug
+        self.addPoint(200, 200, 0, 0);
+        // Setup regular functions
+        this.regularAddPointHandle = setInterval(function () {
+            // self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2);
+        }, 1000);
+        this.regularUpdateHandle = setInterval(function () {
+            self.update.call(self);
+        }, 30);
     };
 
     // Create instance in window and start game
