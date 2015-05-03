@@ -32,8 +32,6 @@
             y: 0,
             radius: 1,
             duration: 1000,
-            strength: 1,
-            health: 1,
             strokeColor: '#000',
             strokeWidth: '4',
             fillColor: '#000'
@@ -125,7 +123,6 @@
 
         // Setup event
         this.element.on('burst', function () {
-            console.log('burst');
             game.addRing(self.element.x(), self.element.y(), 'white');
             game.removePoint(self.element);
         });
@@ -237,7 +234,11 @@
                 pr = point.width() / 2;
                 dist2 = Math.pow(rx - px, 2) + Math.pow(ry - py, 2);
                 diff2 = Math.pow(rr + pr, 2);
-                ratio = (diff2 < 0.1) ? 0 : (dist2 / diff2);
+                if (diff2 < 0.1) {
+                    ratio = 0;
+                } else {
+                    ratio = dist2 / diff2;
+                }
                 if ((ratio > 0.85) && (ratio < 1.15)) {
                     point.fire('burst');
                 }
