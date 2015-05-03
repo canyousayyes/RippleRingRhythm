@@ -133,19 +133,53 @@
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
     RippleRingRhythm.WhitePoint.prototype.constructor = RippleRingRhythm.BasePoint;
 
+    // GameMenuBaseButton Class
+    RippleRingRhythm.GameMenuBaseButton = function (menu, extendArgs) {
+        var defaultExtendArgs = {
+            radius: 80,
+            duration: 1000,
+            strokeColor: '#000',
+            strokeWidth: '4',
+            fillColor: '#08C'
+        };
+        this.args = RippleRingRhythm.extend(defaultExtendArgs, extendArgs);
+
+        // Create element in target svg and set properties based on this.args
+        this.element = menu.buttons.circle(this.args.radius);
+        this.element.stroke({color: this.args.strokeColor, width: this.args.strokeWidth})
+                .fill({color: this.args.fillColor});
+
+        // Setup animation
+        this.animation = this.element.animate({duration: this.args.duration, ease: '-'});
+    };
+
+    // GameMenuRingDurationButton extends GameMenuBaseButton
+    RippleRingRhythm.GameMenuRingDurationButton = function (menu) {
+        var extendArgs = {};
+
+        // Super
+        RippleRingRhythm.GameMenuBaseButton.call(this, menu, extendArgs);
+    };
+    RippleRingRhythm.GameMenuRingDurationButton.prototype = Object.create(RippleRingRhythm.GameMenuBaseButton.prototype);
+    RippleRingRhythm.GameMenuRingDurationButton.prototype.constructor = RippleRingRhythm.GameMenuRingDurationButton;
+
     // GameMenu Module
     RippleRingRhythm.GameMenu = function (game) {
         var self = this;
         this.game = game;
         // Setup menu svg group and make it the top layer (but hidden)
-        this.group = this.game.svg.group();
-        this.group.front().hide();
+        this.container = this.game.svg.group();
+        this.container.front().hide();
 
-        // Setup elements in the group
-        this.overlay = this.group.rect('100%', '100%');
+        // Setup overlay
+        this.overlay = this.container.rect('100%', '100%');
         this.overlay.move(0, 0)
                 .fill({color: '#000'})
                 .opacity(0);
+
+        // Setup buttons
+        this.buttons = this.container.group();
+        this.addButton('ringDuration');
 
         // Setup event
         this.overlay.click(function (e) {
@@ -158,15 +192,27 @@
         }, false);
     };
 
+    RippleRingRhythm.GameMenu.prototype.addButton = function (type) {
+        var buttonObj;
+        switch (type) {
+        case 'ringDuration':
+            buttonObj = new RippleRingRhythm.GameMenuRingDurationButton(this);
+            break;
+        }
+        if (buttonObj) {
+            this.buttons.add(buttonObj.element);
+        }
+    };
+
     RippleRingRhythm.GameMenu.prototype.showMenu = function (x, y) {
-        this.group.show();
+        this.container.show();
         this.overlay.animate().opacity(0.5);
     };
 
     RippleRingRhythm.GameMenu.prototype.hideMenu = function () {
         var self = this;
         this.overlay.animate().opacity(0).after(function () {
-            self.group.hide();
+            self.container.hide();
         });
     };
 
