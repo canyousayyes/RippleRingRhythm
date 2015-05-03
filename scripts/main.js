@@ -151,12 +151,49 @@
         var pointObj;
         switch (type) {
         case 'white':
-            pointObj = new RippleRingRhythm.WhitePoint(this, x, y, dx, dy)
+            pointObj = new RippleRingRhythm.WhitePoint(this, x, y, dx, dy);
             break;
         }
         if (pointObj) {
             this.points.add(pointObj.element);
         }
+    };
+
+    RippleRingRhythm.Game.prototype.addRandomPoint = function () {
+        var rbox, direction, speed, angle, x, y, dx, dy;
+        rbox = this.svg.rbox();
+        speed = 0.1;
+        angle = Math.random() * 120 - 60;
+        // Random determine a direction
+        direction = Math.floor(Math.random() * 4);
+        // Determine x, y, angle based on direction
+        switch (direction) {
+        case 0: // Come from top, x = 10% ~ 90% width, y = 0, angle = 270 +/- range
+            x = ((Math.random() * 0.8) + 0.1) * rbox.width;
+            y = 0;
+            angle = angle + 270;
+            break;
+        case 1: // Come from bottom, x = 10% ~ 90% width, y = height, angle = 90 +/- range
+            x = ((Math.random() * 0.8) + 0.1) * rbox.width;
+            y = rbox.height;
+            angle = angle + 90;
+            break;
+        case 2: // Come from left, x = 0, y = 10% ~ 90% height, angle = 0 +/- range
+            x = 0;
+            y = ((Math.random() * 0.8) + 0.1) * rbox.height;
+            break;
+        case 3: // Come from right, x = 0, y = 10% ~ 90% height, angle = 180 +/- range
+            x = rbox.width;
+            y = ((Math.random() * 0.8) + 0.1) * rbox.height;
+            angle = angle + 180;
+            break;
+        }
+        // Calculate dx, dy
+        angle = angle * Math.PI / 180;
+        dx = speed * Math.cos(angle);
+        dy = speed * Math.sin(angle) * -1;
+        // Add that point into game
+        this.addPoint(x, y, dx, dy, 'white');
     };
 
     RippleRingRhythm.Game.prototype.removePoint = function (point) {
@@ -203,8 +240,8 @@
         });
         // Setup regular functions
         this.regularAddPointHandle = setInterval(function () {
-            self.addPoint(Math.random() * 400 + 20, Math.random() * 200 + 20, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2, 'white');
-        }, 1000);
+            self.addRandomPoint();
+        }, 500);
         this.regularUpdateHandle = setInterval(function () {
             self.update.call(self);
         }, 30);
