@@ -45,9 +45,9 @@
         // Create element in target svg and set properties based on this.args
         this.element = game.svg.circle(this.args.radius);
         this.element.stroke({color: this.args.strokeColor, width: this.args.strokeWidth})
-                .fill({color: this.args.fillColor})
-                .opacity(1)
-                .move(this.args.x, this.args.y);
+            .fill({color: this.args.fillColor})
+            .opacity(1)
+            .move(this.args.x, this.args.y);
 
         // Setup animation
         this.animation = this.element.animate({duration: this.args.duration, ease: '-'});
@@ -133,11 +133,45 @@
     RippleRingRhythm.WhitePoint.prototype = Object.create(RippleRingRhythm.BasePoint.prototype);
     RippleRingRhythm.WhitePoint.prototype.constructor = RippleRingRhythm.BasePoint;
 
+    // BaseMission Class
+    RippleRingRhythm.BaseMission = function () {
+        this.conditionText = "";
+        this.rewardText = "";
+    };
+    RippleRingRhythm.BaseMission.prototype.getText = function () {
+        return this.conditionText + " to " + this.rewardText;
+    };
+    RippleRingRhythm.BaseMission.prototype.isCompleted = function () {
+        // To be overwritten by subclasses
+        return false;
+    };
+    RippleRingRhythm.BaseMission.prototype.applyReward = function () {
+        // To be overwritten by subclasses
+    };
+
+    // TotalScoreMission extends BaseMission
+    RippleRingRhythm.TotalScoreMission = function (game) {
+        RippleRingRhythm.BaseMission.call(this, game);
+        this.targetScore = Math.floor((game.setting.score + 500) * 1.2);
+        this.conditionText = "Achieve " + this.targetScore + " total score";
+        this.rewardText = "increase ring duration.";
+    };
+    RippleRingRhythm.TotalScoreMission.prototype = Object.create(RippleRingRhythm.BaseMission.prototype);
+    RippleRingRhythm.TotalScoreMission.prototype.constructor = RippleRingRhythm.TotalScoreMission;
+
+    RippleRingRhythm.TotalScoreMission.prototype.isCompleted = function (game) {
+        return game.setting.score >= this.targetScore;
+    };
+    RippleRingRhythm.TotalScoreMission.prototype.applyReward = function () {
+        game.setting.ringDuration += 1000;
+    };
+
     // Game Module
     RippleRingRhythm.Game = function () {
         this.svg = null;
         this.svgBackground = null;
         this.svgScore = null;
+        this.svgMission = null;
         this.points = null;
         this.rings = null;
         this.chainCount = null;
@@ -145,6 +179,7 @@
         this.setting = null;
         this.regularAddPointHandle = null;
         this.regularUpdateHandle = null;
+        this.mission = null;
     };
 
     RippleRingRhythm.Game.prototype.addRing = function (x, y, type) {
@@ -240,12 +275,12 @@
     RippleRingRhythm.Game.prototype.showPointScore = function (x, y, score) {
         var svgText, svgTextAnimation;
         svgText = this.svg.text(score.toString())
-                .fill({color: '#08C'})
-                .font({family: 'sans-serif', size: 12})
-                .center(x, y)
-                .opacity(1);
+            .fill({color: '#08C'})
+            .font({family: 'sans-serif', size: 12})
+            .center(x, y)
+            .opacity(1);
         svgTextAnimation = svgText.animate({duration: 1000, ease: '-'})
-                .opacity(0);
+            .opacity(0);
         svgTextAnimation.after(function () {
             svgText.remove();
         });
@@ -257,6 +292,11 @@
         score = this.addChainedScore(this.setting.baseScore);
         this.showPointScore(point.x(), point.y(), score);
         this.removePoint(point);
+    };
+
+    RippleRingRhythm.Game.prototype.setNextMission = function () {
+        this.mission =  new RippleRingRhythm.TotalScoreMission(this);
+        this.svgMission.text(this.mission.getText());
     };
 
     RippleRingRhythm.Game.prototype.update = function () {
@@ -292,6 +332,11 @@
         });
         // Update score
         this.svgScore.text('Score: ' + this.setting.score);
+        // Update mission
+        if (this.mission.isCompleted(this)) {
+            this.mission.applyReward();
+            this.setNextMission();
+        }
     };
 
     RippleRingRhythm.Game.prototype.init = function () {
@@ -300,11 +345,13 @@
         this.svg = new SVG('game').size('100%', '100%');
         this.svgBackground = this.svg.rect('100%', '100%').move(0, 0).fill({color: '#191919'});
         this.svgScore = this.svg.text('').move(10, 5).font({family: 'sans-serif', size: 14}).fill({color: '#EFEFEF'});
+        this.svgMission = this.svg.text('').move(10, 25).font({family: 'sans-serif', size: 14}).fill({color: '#EFEFEF'});
         this.points = this.svg.group();
         this.rings = this.svg.group();
         this.chainCount = 0;
         this.lastChainTimestamp = new Date();
         this.setting = new RippleRingRhythm.Setting();
+        this.setNextMission();
         // Setup events
         this.svg.click(function (e) {
             self.addRing(e.x, e.y, 'white');
